@@ -1,5 +1,5 @@
 ### Whack-a-Mole
-My First Project
+A JavaScript Whack-a-Mole Game
 
 This program was written as a JavaScript coding challenge, according to the following specifications:
 - When your program starts up it must display the image that will move around, a Start button, a Stop button, and a way for the user to specify an interval before a new game begins. The default interval must be 1000 msec.
