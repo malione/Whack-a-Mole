@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="utf-8">
+        <title>Whack a Mole JavaScript Programming Challenge</title>
+        <meta name="description" content="A demonstration of my web coding style!">
+        <meta name="author" content="Michael Malione">
+        <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1 id="introhead">Whack a Mole 
+<!-- The original image is 320 x 142 px -->
+<img id="mole" title="By Pearson Scott Foresman [Public domain], via Wikimedia Commons" alt="Mole" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Mole_%28PSF%29.png/320px-Mole_%28PSF%29.png"/>
+</h1>
+<section id="container">
+	<canvas id="viewport" width="800" height="355" onclick="checkHit()">
+		Your browser does not support the HTML5 canvas tag.
+	</canvas>
+	<menu id="controls">
+		<button onclick="startGame()" class="Button" name="start">Start</button>
+		<button onclick="stopGame()" class="Button">Stop</button>
+		<span id="interval">
+			Interval: <input type="number" name="interval" value="1000" min="1" max="99999"> ms
+		</span>
+	</menu>
+</section>
+
+<script>
+var moleWidth;	// This is the width at which the jumping mole image is displayed.
+var moleHeight; // This height set automatically to maintain the image's aspect ratio.
+var moleX;		// The current x position of the mole on the canvas.
+var moleY;		// The current y position of the mole on the canvas.
+var interval;	// The interval duration in milliseconds.
+var theInterval;// The actual interval object that signals the mole to move.
+var hitCount;	// The number of hits the player has reached, -1 for no game in play.
+var stopped;	// This flag indicates the game was stopped and needs reinitialization.
+var startTime;	// The time at which the game started.
+
+function initGame() {
+    // If a prior game was stopped, the old mole needs to be cleared.
+    if (stopped == true) {
+	 	ctx.beginPath();
+		ctx.rect(moleX, moleY, moleWidth, moleHeight);
+		ctx.fillStyle = 'white';
+		ctx.fill();
+	    document.getElementsByName("start")[0].innerHTML = "Start";
+	}
+
+    // Initialize the mole image globals before drawing
+    moleX = 10;
+    moleY = 10;
+    moleWidth = 150;
+    moleHeight = moleWidth * img.naturalHeight / img.naturalWidth;
+
+    // Draw the mole image at its initial fixed location
+	ctx.drawImage(img, moleX, moleY, moleWidth, moleHeight);
+
+    // Initialize the hit count and stopped flag.
+    hitCount = -1;
+    stopped = false;
+
+    // Display the start button, stop button, and interval input
+    document.getElementById("controls").style.visibility = "visible";
+    document.getElementById("interval").style.visibility = "visible";
+    document.getElementsByName("start")[0].style.visibility = "visible";
+}
+
+window.onload = function() {
+	// Get the viewport canvas object and the mole image
+    canvas = document.getElementById("viewport");
+    ctx = canvas.getContext("2d");
+    img = document.getElementById("mole");
+
+    // Initialize the game with a fixed location and size for the mole image
+    initGame();
+}
+
+function moveMole() {
+
+    // Compute a new random location for the next mole poisition.
+	var newX = Math.random() * (canvas.width - moleWidth - 1);
+	var newY = Math.random() * (canvas.height - moleHeight - 1);
+
+    // Erase and Redraw the mole in the new position.
+	ctx.beginPath();
+	ctx.rect(moleX, moleY, moleWidth, moleHeight);
+	ctx.fillStyle = 'white';
+	ctx.fill();
+	moleX = newX;
+	moleY = newY;
+    ctx.drawImage(img, moleX, moleY, moleWidth, moleHeight);
+}
+
+function startGame() {  // This is called when the start button is pressed.
+	// Handle the case where the previous game was stopped with the stop button.
+	if(stopped == true) {
+		initGame();
+		return;
+	}
+
+    // Get the interval value
+    interval = document.getElementsByName("interval")[0].value;
+
+	// Hide the Start button and the interval value.
+    document.getElementsByName("start")[0].style.visibility = "hidden";
+    document.getElementById("interval").style.visibility = "hidden";
+
+    // Reset the hit counter and start time.
+    hitCount = 0;
+    startTime = Date.now();
+
+    // Have the mole move according to the specified interval.
+    moveMole();
+    theInterval = window.setInterval(moveMole, interval, false);
+}
+
+function stopGame() {  // This is called when the stop button is pressed.
+	// Stop the mole from moving any further
+	clearInterval(theInterval);
+	stopped = true;
+
+	// Show the Start button and the interval value.
+	var stbutton = document.getElementsByName("start")[0]
+    stbutton.style.visibility = "visible";
+    stbutton.innerHTML = "Reset";
+    document.getElementById("interval").style.visibility = "visible";	
+}
+
+function checkHit() {
+
+    if (hitCount < 0) {		// Don't do anything unless a game has started.
+    	return;
+    }
+
+	var rect = canvas.getBoundingClientRect()
+	var x = event.clientX - rect.left;
+	var y = event.clientY - rect.top;
+
+	// Check to see if the mouse click was in the region, and handle accordingly.
+	if(x > moleX && x < moleX + moleWidth - 1 && y > moleY && y < moleY + moleHeight - 1) {
+		hitCount++;
+		if(hitCount == 3) {
+			clearInterval(theInterval);
+		    r = confirm("The exapsed time is " + 
+		    	(Date.now() - startTime) / 1000		// Convert milliseconds to seconds
+		    	  + " seconds.\nPlay again?");
+		    if (r == true) {
+		    	startGame();
+		    } else {
+		    	// Close up the program.
+		    	document.getElementById("container").style.display = "none";
+		    	document.getElementById("introhead").innerHTML = "Thanks for playing!";
+		    }
+		} else {
+			// Clear the old interval and start a new one right at this moment.
+			clearInterval(theInterval);
+
+			// Draw a red rectangle over the mole that was hit.
+			ctx.beginPath();
+			ctx.rect(moleX+3, moleY+3, moleWidth-6, moleHeight-6);
+			ctx.fillStyle = 'red';
+			ctx.fill();
+
+		    theInterval = window.setInterval(waitAfterHit, 100);
+		}
+	}
+}
+
+function waitAfterHit() {
+	clearInterval(theInterval);
+	moveMole();
+	theInterval = window.setInterval(moveMole, interval);
+}
+
+</script>
+</body>
+</html>
